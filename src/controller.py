@@ -1,43 +1,5 @@
 import numpy as np
-import pdb
 import datetime
-
-def Regression(x, u, lamb):
-    """Estimates linear system dynamics
-    x, u: date used in the regression
-    lamb: regularization coefficient
-    """
-
-    # Want to solve W^* = argmin sum_i ||W^T z_i - y_i ||_2^2 + lamb ||W||_F,
-    # with z_i = [x_i u_i] and W \in R^{n + d} x n
-    Y = x[2:x.shape[0], :]
-    X = np.hstack((x[1:(x.shape[0] - 1), :], u[1:(x.shape[0] - 1), :]))
-
-    Q = np.linalg.inv(np.dot(X.T, X) + lamb * np.eye(X.shape[1]))
-    b = np.dot(X.T, Y)
-    W = np.dot(Q, b)
-
-    A = W.T[:, 0:6]
-    B = W.T[:, 6:8]
-
-    ErrorMatrix = np.dot(X, W) - Y
-    ErrorMax = np.max(ErrorMatrix, axis=0)
-    ErrorMin = np.min(ErrorMatrix, axis=0)
-    Error = np.vstack((ErrorMax, ErrorMin))
-
-    return A, B, Error
-
-
-def wrap(angle):
-    if angle < -np.pi:
-        w_angle = 2 * np.pi + angle
-    elif angle > np.pi:
-        w_angle = angle - 2 * np.pi
-    else:
-        w_angle = angle
-
-    return w_angle
-
 
 class PID:
     """Create the PID controller used for path following at constant speed

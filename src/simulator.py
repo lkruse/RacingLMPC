@@ -1,7 +1,4 @@
 import numpy as np
-import pdb
-import datetime
-from fnc.Utilities import wrap
 
 class Simulator():
     """Vehicle simulator
@@ -25,8 +22,6 @@ class Simulator():
         x_cl      = [x0[0]]
         x_cl_glob = [x0[1]]
         u_cl   = []
-        sim_t  = 0
-        SimulationTime = 0
         
         i=0
         flagExt = False
