@@ -1,7 +1,7 @@
 import numpy as np
 import pdb
 import datetime
-from Utilities import wrap
+from fnc.Utilities import wrap
 
 class Simulator():
     """Vehicle simulator

@@ -25,13 +25,13 @@ sys.path.append('fnc/simulator')
 sys.path.append('fnc/controller')
 sys.path.append('fnc')
 import matplotlib.pyplot as plt
-from plot import plotTrajectory, plotClosedLoopLMPC, animation_xy, animation_states, saveGif_xyResults
+from fnc.plot import plotTrajectory, animation_xy
 from initControllerParameters import initMPCParams, initLMPCParams
-from PredictiveControllers import MPC, LMPC, MPCParams
-from PredictiveModel import PredictiveModel
-from Utilities import Regression, PID
-from SysModel import Simulator
-from Track import Map
+from fnc.controller.PredictiveControllers import MPC, LMPC, MPCParams
+from fnc.controller.PredictiveModel import PredictiveModel
+from fnc.Utilities import Regression, PID
+from fnc.simulator.SysModel import Simulator
+from fnc.simulator.Track import Map
 import numpy as np
 import pickle
 import pdb
@@ -65,7 +65,7 @@ def main():
     PIDController = PID(vt)
     xPID_cl, uPID_cl, xPID_cl_glob, _ = simulator.sim(xS, PIDController)
     print("===== PID terminated")
-
+    '''
     # ======================================================================================================================
     # ======================================  LINEAR REGRESSION ============================================================
     # ======================================================================================================================
@@ -119,26 +119,21 @@ def main():
         lmpcpredictiveModel.addTrajectory(xLMPC,uLMPC)
         print("Completed lap: ", it, " in ", np.round(lmpc.Qfun[it][0]*dt, 2)," seconds")
     print("===== LMPC terminated")
-
+    '''
     # # ======================================================================================================================
     # # ========================================= PLOT TRACK =================================================================
     # # ======================================================================================================================
-    for i in range(0, lmpc.it):
-        print("Lap time at iteration ", i, " is ",np.round( lmpc.Qfun[i][0]*dt, 2), "s")
+    #for i in range(0, lmpc.it):
+    #    print("Lap time at iteration ", i, " is ",np.round( lmpc.Qfun[i][0]*dt, 2), "s")
 
     print("===== Start Plotting")
-    plotTrajectory(map, xPID_cl, xPID_cl_glob, uPID_cl, 'PID')
-    plotTrajectory(map, xMPC_cl, xMPC_cl_glob, uMPC_cl, 'MPC')
-    plotTrajectory(map, xTVMPC_cl, xTVMPC_cl_glob, uTVMPC_cl, 'TV-MPC')
-    plotClosedLoopLMPC(lmpc, map)
-    animation_xy(map, lmpc, Laps-1)
+    plotTrajectory(map, xPID_cl_glob, 'PID')
+    #plotTrajectory(map, xMPC_cl, xMPC_cl_glob, uMPC_cl, 'MPC')
+    #plotTrajectory(map, xTVMPC_cl, xTVMPC_cl_glob, uTVMPC_cl, 'TV-MPC')
+    #plotClosedLoopLMPC(lmpc, map)
+    animation_xy(map, xPID_cl_glob[::4])
+    #saveGif_xyResults(map, lmpc, it)
     plt.show()
-
-    # animation_states(map, LMPCOpenLoopData, lmpc, Laps-2)
-    # animation_states(map, LMPCOpenLoopData, lmpc, Laps-2)
-    # animation_states(map, LMPCOpenLoopData, lmpc, Laps-2)
-    # animation_states(map, LMPCOpenLoopData, lmpc, Laps-2)
-    # saveGif_xyResults(map, LMPCOpenLoopData, lmpc, Laps-2)
 
 if __name__== "__main__":
   main()
