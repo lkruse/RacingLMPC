@@ -19,38 +19,32 @@ class Simulator():
     def sim(self, x0,  Controller, maxSimTime = 100):
         """Simulate closed-loop system
         """
-        x_cl      = [x0[0]]
-        x_cl_glob = [x0[1]]
+        x_cl_curve      = x0
         u_cl   = []
         
         i=0
         flagExt = False
         while (i<int(maxSimTime/self.dt)) and (flagExt==False):
-            Controller.solve(x_cl[-1])
+            Controller.solve(x_cl_curve[-1])
             u_cl.append(Controller.uPred[0,:].copy())
 
-            if self.flagLMPC == True:
-                Controller.addPoint(x_cl[-1], u_cl[-1])
-
-            xt, xt_glob = self.dynModel(x_cl[-1], x_cl_glob[-1], u_cl[-1])
+            xt = self.dynModel(x_cl_curve[-1], u_cl[-1])
             
-            x_cl.append(xt)
-            x_cl_glob.append(xt_glob)
+            x_cl_curve.append(xt)
+            #x_cl_global.append(xt_glob)
 
-            if (self.multiLap == False) and ( x_cl[-1][4] > (self.map.TrackLength)):
+            if (self.multiLap == False) and ( x_cl_curve[-1][4] > (self.map.TrackLength)):
                 print("Lap completed")
                 flagExt = True
             i += 1
 
-        xF = [np.array(x_cl[-1]) - np.array([0, 0, 0, 0, self.map.TrackLength, 0]), np.array(x_cl_glob[-1])]
-        x_cl.pop()
-        x_cl_glob.pop()
+        #xF = [np.array(x_cl_curve[-1]) - np.array([0, 0, 0, 0, self.map.TrackLength, 0]), np.array(x_cl_global[-1])]
+        x_cl_curve.pop()
+        #x_cl_global.pop()
 
-        return np.array(x_cl), np.array(u_cl), np.array(x_cl_glob), xF
+        return np.array(x_cl_curve), np.array(u_cl)#, np.array(x_cl_global), xF
 
-    def dynModel(self, x, x_glob, u):
-        # This method computes the system evolution. Note that the discretization is deltaT and therefore is needed that
-        # dt <= deltaT and ( dt / deltaT) = integer value
+    def dynModel(self, x_curve, u):
 
         # Vehicle Parameters
         m  = 1.98
@@ -66,23 +60,26 @@ class Simulator():
 
         # Discretization Parameters
         deltaT = 0.001
-        x_next     = np.zeros(x.shape[0])
-        cur_x_next = np.zeros(x.shape[0])
+        #x_next     = np.zeros(x_curve.shape[0])
+        cur_x_next = np.zeros(x_curve.shape[0])
 
         # Extract the value of the states
         delta = u[0]
         a     = u[1]
 
-        psi = x_glob[3]
-        X = x_glob[4]
-        Y = x_glob[5]
+        #psi = x_global[3]
+        #X = x_global[4]
+        #Y = x_global[5]
 
-        vx    = x[0]
-        vy    = x[1]
-        wz    = x[2]
-        epsi  = x[3]
-        s     = x[4]
-        ey    = x[5]
+        vx    = x_curve[0]
+        vy    = x_curve[1]
+        wz    = x_curve[2]
+        epsi  = x_curve[3]
+        s     = x_curve[4]
+        ey    = x_curve[5]
+        psi = x_curve[6]
+        x = x_curve[7]
+        y = x_curve[8]
 
         # Initialize counter
         i = 0
@@ -96,12 +93,12 @@ class Simulator():
             Fyr = Dr * np.sin( Cr * np.arctan(Br * alpha_r ) )
 
             # Propagate the dynamics of deltaT
-            x_next[0] = vx  + deltaT * (a - 1 / m * Fyf * np.sin(delta) + wz*vy)
-            x_next[1] = vy  + deltaT * (1 / m * (Fyf * np.cos(delta) + Fyr) - wz * vx)
-            x_next[2] = wz  + deltaT * (1 / Iz *(lf * Fyf * np.cos(delta) - lr * Fyr) )
-            x_next[3] = psi + deltaT * (wz)
-            x_next[4] =   X + deltaT * ((vx * np.cos(psi) - vy * np.sin(psi)))
-            x_next[5] =   Y + deltaT * (vx * np.sin(psi)  + vy * np.cos(psi))
+            #x_next[0] = vx  + deltaT * (a - 1 / m * Fyf * np.sin(delta) + wz*vy)
+            #x_next[1] = vy  + deltaT * (1 / m * (Fyf * np.cos(delta) + Fyr) - wz * vx)
+            #x_next[2] = wz  + deltaT * (1 / Iz *(lf * Fyf * np.cos(delta) - lr * Fyr) )
+            #x_next[3] = psi + deltaT * (wz)
+            #x_next[4] =   X + deltaT * ((vx * np.cos(psi) - vy * np.sin(psi)))
+            #x_next[5] =   Y + deltaT * (vx * np.sin(psi)  + vy * np.cos(psi))
 
             cur = self.map.curvature(s)
             cur_x_next[0] = vx   + deltaT * (a - 1 / m * Fyf * np.sin(delta) + wz*vy)
@@ -110,22 +107,24 @@ class Simulator():
             cur_x_next[3] = epsi + deltaT * ( wz - (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) * cur )
             cur_x_next[4] = s    + deltaT * ( (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) )
             cur_x_next[5] = ey   + deltaT * (vx * np.sin(epsi) + vy * np.cos(epsi))
+            cur_x_next[6] = psi + deltaT * (wz)
+            cur_x_next[7] =   x + deltaT * ((vx * np.cos(psi) - vy * np.sin(psi)))
+            cur_x_next[8] =   y + deltaT * (vx * np.sin(psi)  + vy * np.cos(psi))
 
             # Update the value of the states
-            psi  = x_next[3]
-            X    = x_next[4]
-            Y    = x_next[5]
-
             vx   = cur_x_next[0]
             vy   = cur_x_next[1]
             wz   = cur_x_next[2]
             epsi = cur_x_next[3]
             s    = cur_x_next[4]
             ey   = cur_x_next[5]
+            psi  = cur_x_next[6]
+            x    = cur_x_next[7]
+            y    = cur_x_next[8]
 
             if (s < 0):
-                print("Start Point: ", x, " Input: ", u)
-                print("x_next: ", x_next)
+                print("Start Point: ", x_curve, " Input: ", u)
+                #print("x_next: ", x_next)
 
             # Increment counter
             i = i+1
@@ -139,7 +138,7 @@ class Simulator():
         cur_x_next[1] = cur_x_next[1] + 0.01*noise_vy
         cur_x_next[2] = cur_x_next[2] + 0.01*noise_wz
 
-        return cur_x_next, x_next
+        return cur_x_next
 
 
 
